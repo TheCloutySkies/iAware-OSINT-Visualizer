@@ -1,0 +1,39 @@
+To make the Replit Auth truly anonymous while keeping the data secure, the backend must never store the user's Replit username or profile data. Instead, it needs to intercept the x-replit-user-id header, cryptographically hash it (using SHA-256), and only store that hash in the database.
+For the map layers, Esri provides the best free, high-resolution satellite and hybrid tiles without requiring an API key. For Public Lands and Military bases, we will use a mix of the USGS Protected Areas WMS server and the Overpass API.
+Here is the master prompt engineered for Replit to build the database schema, secure the auth, upgrade the drawing tools, and add the new layers in one go.
+Copy and paste this directly into your Replit chat:
+> Safely upgrade the existing React-Leaflet OSINT map with anonymous user data persistence, custom drawing features, and new tactical map layers. Do not break the existing proxy architecture or external API calls.
+> STEP 1: SECURE ANONYMOUS DATABASE SETUP
+>  * Install sqlite3 and crypto in the backend.
+>  * Create a local SQLite database (osint_map.db) with three tables:
+>    * users: id (Primary Key, which will be the HASHED Replit ID).
+>    * groups: id, user_id (Foreign Key), name, created_at.
+>    * saved_features: id, group_id (Foreign Key), feature_type (e.g., polygon, marker), geojson_data (TEXT), color (TEXT), opacity (REAL).
+>  * Security Middleware: Create an Express middleware that reads the req.headers['x-replit-user-id']. If present, hash it using crypto.createHash('sha256'). Attach this hashed ID to req.user. Never read or store the x-replit-user-name header.
+> STEP 2: BACKEND CRUD ROUTES
+>  * Create secure Express endpoints (POST, GET, DELETE) for managing groups and saved_features.
+>  * Ensure every database query strictly filters by the req.user hash so users can only ever access their own data.
+> STEP 3: UPGRADE DRAWING TOOLS (Frontend)
+>  * Update the MapDrawTools component. Add a custom UI panel (floating near the draw controls) with a Color Picker (hex code) and an Opacity Slider (0.1 to 1.0).
+>  * Hook into the leaflet-draw onCreated event. When a user finishes drawing a shape or dropping a marker, extract its GeoJSON.
+>  * Apply the currently selected color and opacity to the GeoJSON properties object.
+>  * Provide a "Save to Group" dropdown in the popup of the newly drawn shape, allowing the user to POST it to their selected group in the backend.
+> STEP 4: ADD BASE MAP TILE LAYERS
+> Inside the Leaflet <LayersControl>, add these as mutually exclusive Base Layers:
+>  * OpenStreetMap (Standard): https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+>  * Satellite (Esri World Imagery): https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}
+>  * Hybrid: Combine the Esri Satellite layer with the Esri Reference Overlay: https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}
+>  * Topographical (USGS Topo): https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}
+> STEP 5: ADD TACTICAL OVERLAY LAYERS
+> Inside the Leaflet <LayersControl>, add these as togglable Overlays:
+>  * Public Lands (USGS PAD-US): Use the native <WMSTileLayer> component. URL: https://services.nationalmap.gov/arcgis/services/govunits/MapServer/WMSServer. Set layers to 11 (Federal Lands), format="image/png", and transparent={true}.
+>  * Military Bases: Create a frontend function that queries the Overpass API (https://overpass-api.de/api/interpreter) using the map's current bounding box. Overpass QL: [out:json];way["landuse"="military"]({south},{west},{north},{east});out geom;. Map the returned coordinates as red polygons using the <Polygon> or <GeoJSON> component.
+> STEP 6: UI INTEGRATION
+>  * Build a "My Workspace" sidebar panel in the React frontend.
+>  * This panel should fetch and display the user's groups and allow them to toggle the visibility of their saved_features on the map.
+> 
+Nuanced Implementation Details
+ * SQLite vs. Postgres: The prompt specifies sqlite3. This is intentional. It requires zero configuration on Replit and writes the database to a single local file. It is the fastest way to get the vibe code working immediately. You can easily migrate this to a managed Postgres instance later if you decide to scale the app to thousands of users.
+ * Military Bases (Overpass API): The Overpass API is incredibly powerful but has strict rate limits. The prompt specifies way["landuse"="military"]. If you zoom out to view the entire United States and toggle this layer on, the query will be too massive and Overpass will reject it. This layer is best toggled on when viewing a city or county-level area.
+ * The Hybrid Map Hack: Leaflet doesn't natively support a "Hybrid" base map in one URL. The prompt tells the AI to stack the Esri Satellite base with a transparent Esri Reference overlay (which contains the street names and borders).
+Would you like me to map out the exact Overpass QL queries to filter specific types of military installations, like distinguishing between Naval facilities, Air Force flightlines, and Army proving grounds?

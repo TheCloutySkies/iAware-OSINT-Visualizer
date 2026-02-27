@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { useState, useMemo } from "react";
+import { Marker, Popup, TileLayer, GeoJSON, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { useQuery } from "@tanstack/react-query";
 import type { FlightData, HazardEvent, WikiArticle, SurveillanceCamera } from "@shared/schema";
@@ -121,6 +121,30 @@ export function TileOverlays({ layers }: { layers: LayerVisibility }) {
           url="https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://memomaps.de/">MeMoMaps</a> &copy; OpenStreetMap'
           maxZoom={17}
+        />
+      )}
+      {layers.topomap && (
+        <TileLayer
+          url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+          maxZoom={17}
+          opacity={0.7}
+        />
+      )}
+      {layers.openaip && (
+        <TileLayer
+          url="https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openaip.net">OpenAIP</a>'
+          tms={true}
+          opacity={0.7}
+        />
+      )}
+      {layers.firms && (
+        <TileLayer
+          url="https://map1.vis.earthdata.nasa.gov/wmts-webmerc/FIRMS_Active_Fires/default/default/GoogleMapsCompatible_Level11/{z}/{y}/{x}.png"
+          attribution='&copy; NASA FIRMS'
+          maxZoom={11}
+          opacity={0.9}
         />
       )}
     </>
@@ -310,3 +334,119 @@ export function SurveillanceLayer() {
   );
 }
 
+function getGdacsColor(alertlevel: string | undefined): string {
+  const level = (alertlevel || "").toLowerCase();
+  if (level === "red") return "#ef4444";
+  if (level === "orange") return "#f97316";
+  return "#22c55e";
+}
+
+export function GdacsLayer() {
+  const { data: geojson } = useQuery<any>({
+    queryKey: ["/api/gdacs"],
+    queryFn: async () => {
+      const res = await fetch("/api/gdacs");
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 300000,
+  });
+
+  const pointToLayer = useMemo(() => {
+    return (feature: any, latlng: L.LatLng) => {
+      const color = getGdacsColor(feature?.properties?.alertlevel);
+      return L.circleMarker(latlng, {
+        radius: 8,
+        fillColor: color,
+        color: color,
+        weight: 2,
+        opacity: 0.9,
+        fillOpacity: 0.4,
+      });
+    };
+  }, []);
+
+  const onEachFeature = useMemo(() => {
+    return (feature: any, layer: L.Layer) => {
+      if (feature?.properties) {
+        const p = feature.properties;
+        const color = getGdacsColor(p.alertlevel);
+        const detailUrl = typeof p.url === "object" ? p.url?.report : p.url;
+        layer.bindPopup(
+          `<div style="color: #e2e8f0; background: #0f172a; padding: 8px; border-radius: 6px; min-width: 200px; font-size: 12px;">
+            <div style="font-weight: 700; color: ${color}; margin-bottom: 4px;">
+              ${p.eventtype || "Event"}: ${p.name || p.eventname || "Unknown"}
+            </div>
+            <div>Alert: <span style="color: ${color}; font-weight: 600;">${p.alertlevel || "Green"}</span></div>
+            ${p.country ? `<div>Country: ${p.country}</div>` : ""}
+            ${p.description ? `<div style="color: #94a3b8; font-size: 11px; margin-top: 2px;">${p.description}</div>` : ""}
+            ${detailUrl ? `<a href="${detailUrl}" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; text-decoration: underline; font-size: 11px;">Details →</a>` : ""}
+          </div>`,
+          { className: "custom-popup" }
+        );
+      }
+    };
+  }, []);
+
+  if (!geojson || !geojson.features?.length) return null;
+
+  return (
+    <GeoJSON
+      key={JSON.stringify(geojson.features?.length)}
+      data={geojson}
+      pointToLayer={pointToLayer}
+      onEachFeature={onEachFeature}
+    />
+  );
+}
+
+export function SubmarineCablesLayer() {
+  const { data: geojson } = useQuery<any>({
+    queryKey: ["/api/submarine-cables"],
+    queryFn: async () => {
+      const res = await fetch("/api/submarine-cables");
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 3600000,
+  });
+
+  const style = useMemo(() => {
+    return (feature: any) => ({
+      color: feature?.properties?.color || "#00e5ff",
+      weight: 1.5,
+      opacity: 0.6,
+    });
+  }, []);
+
+  const onEachFeature = useMemo(() => {
+    return (feature: any, layer: L.Layer) => {
+      if (feature?.properties) {
+        const p = feature.properties;
+        layer.bindPopup(
+          `<div style="color: #e2e8f0; background: #0f172a; padding: 8px; border-radius: 6px; min-width: 180px; font-size: 12px;">
+            <div style="font-weight: 700; color: #00e5ff; margin-bottom: 4px;">
+              ${p.name || "Submarine Cable"}
+            </div>
+            ${p.owners ? `<div style="color: #94a3b8; font-size: 11px;">Owners: ${p.owners}</div>` : ""}
+            ${p.length ? `<div style="color: #94a3b8; font-size: 11px;">Length: ${p.length} km</div>` : ""}
+            ${p.rfs ? `<div style="color: #94a3b8; font-size: 11px;">RFS: ${p.rfs}</div>` : ""}
+            ${p.url ? `<a href="${p.url}" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; text-decoration: underline; font-size: 11px;">Details →</a>` : ""}
+          </div>`,
+          { className: "custom-popup" }
+        );
+      }
+    };
+  }, []);
+
+  if (!geojson || !geojson.features?.length) return null;
+
+  return (
+    <GeoJSON
+      key={JSON.stringify(geojson.features?.length)}
+      data={geojson}
+      style={style}
+      onEachFeature={onEachFeature}
+    />
+  );
+}

@@ -11,6 +11,8 @@ import {
   HazardsLayer,
   WikipediaLayer,
   SurveillanceLayer,
+  GdacsLayer,
+  SubmarineCablesLayer,
 } from "@/components/map-layers";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,10 +28,15 @@ export default function MapPage() {
     osm: false,
     railway: false,
     infrastructure: false,
+    topomap: false,
     aviation: true,
     hazards: true,
     wikipedia: false,
     surveillance: false,
+    openaip: false,
+    firms: false,
+    gdacs: false,
+    cables: false,
   });
 
   const { data: health } = useQuery<ApiHealthStatus>({
@@ -74,6 +81,8 @@ export default function MapPage() {
         {layers.hazards && <HazardsLayer />}
         {layers.wikipedia && <WikipediaLayer />}
         {layers.surveillance && <SurveillanceLayer />}
+        {layers.gdacs && <GdacsLayer />}
+        {layers.cables && <SubmarineCablesLayer />}
 
         <MapControls />
         <MapDrawTools />

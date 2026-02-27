@@ -20,6 +20,8 @@ const apiStatus: ApiHealthStatus = {
   hazards: "yellow",
   wikipedia: "yellow",
   surveillance: "yellow",
+  gdacs: "yellow",
+  cables: "yellow",
 };
 
 function stripTrackingHeaders(req: Request) {
@@ -206,6 +208,50 @@ export async function registerRoutes(
       });
     } catch {
       return res.json({ error: "Geocoding failed" });
+    }
+  });
+
+  app.get("/api/gdacs", async (_req, res) => {
+    try {
+      const url = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=&fromDate=" +
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] +
+        "&toDate=" + new Date().toISOString().split("T")[0] +
+        "&alertlevel=&eventtype=";
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": SCRUBBED_USER_AGENT,
+          "Accept": "application/json",
+        },
+      });
+      if (!response.ok) {
+        apiStatus.gdacs = "red";
+        return res.json({ type: "FeatureCollection", features: [] });
+      }
+      const data = await response.json();
+      apiStatus.gdacs = "green";
+      return res.json(data);
+    } catch {
+      apiStatus.gdacs = "red";
+      return res.json({ type: "FeatureCollection", features: [] });
+    }
+  });
+
+  app.get("/api/submarine-cables", async (_req, res) => {
+    try {
+      const url = "https://www.submarinecablemap.com/api/v3/cable/cable-geo.json";
+      const response = await fetch(url, {
+        headers: { "User-Agent": SCRUBBED_USER_AGENT },
+      });
+      if (!response.ok) {
+        apiStatus.cables = "red";
+        return res.json({ type: "FeatureCollection", features: [] });
+      }
+      const data = await response.json();
+      apiStatus.cables = "green";
+      return res.json(data);
+    } catch {
+      apiStatus.cables = "red";
+      return res.json({ type: "FeatureCollection", features: [] });
     }
   });
 

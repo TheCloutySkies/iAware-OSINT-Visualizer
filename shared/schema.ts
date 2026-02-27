@@ -51,6 +51,8 @@ export interface ApiHealthStatus {
   hazards: "green" | "yellow" | "red";
   wikipedia: "green" | "yellow" | "red";
   surveillance: "green" | "yellow" | "red";
+  gdacs: "green" | "yellow" | "red";
+  cables: "green" | "yellow" | "red";
 }
 
 export const boundingBoxSchema = z.object({

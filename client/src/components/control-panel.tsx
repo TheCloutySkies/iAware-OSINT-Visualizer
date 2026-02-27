@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Layers, ChevronRight, ChevronLeft, Plane, AlertTriangle, BookOpen, Camera, Map, TrainFront, Zap } from "lucide-react";
+import { Layers, ChevronRight, ChevronLeft, Plane, AlertTriangle, BookOpen, Camera, Map, TrainFront, Zap, Mountain, Shield, Flame, Globe, Cable } from "lucide-react";
 import type { ApiHealthStatus } from "@shared/schema";
 
 export interface LayerVisibility {
   osm: boolean;
   railway: boolean;
   infrastructure: boolean;
+  topomap: boolean;
   aviation: boolean;
   hazards: boolean;
   wikipedia: boolean;
   surveillance: boolean;
+  openaip: boolean;
+  firms: boolean;
+  gdacs: boolean;
+  cables: boolean;
 }
 
 interface ControlPanelProps {
@@ -77,11 +82,12 @@ export default function ControlPanel({ layers, onToggle, health }: ControlPanelP
       </button>
 
       <div
-        className={`transition-all duration-300 ease-in-out origin-right ${
+        className={`transition-all duration-300 ease-in-out origin-right overflow-y-auto ${
           collapsed
             ? "w-0 opacity-0 overflow-hidden"
             : "w-64 opacity-100"
         }`}
+        style={{ maxHeight: "calc(100vh - 32px)" }}
       >
         <div
           className="rounded-md border border-[hsl(215,15%,16%)] p-4"
@@ -102,6 +108,9 @@ export default function ControlPanel({ layers, onToggle, health }: ControlPanelP
             <LayerRow icon={<Map className="w-3.5 h-3.5" />} label="OpenStreetMap" layerKey="osm" checked={layers.osm} onToggle={onToggle} />
             <LayerRow icon={<TrainFront className="w-3.5 h-3.5" />} label="Railway Map" layerKey="railway" checked={layers.railway} onToggle={onToggle} />
             <LayerRow icon={<Zap className="w-3.5 h-3.5" />} label="Transport Infra" layerKey="infrastructure" checked={layers.infrastructure} onToggle={onToggle} />
+            <LayerRow icon={<Mountain className="w-3.5 h-3.5" />} label="Topographic" layerKey="topomap" checked={layers.topomap} onToggle={onToggle} />
+            <LayerRow icon={<Shield className="w-3.5 h-3.5" />} label="Airspace (AIP)" layerKey="openaip" checked={layers.openaip} onToggle={onToggle} />
+            <LayerRow icon={<Flame className="w-3.5 h-3.5" />} label="NASA FIRMS Fires" layerKey="firms" checked={layers.firms} onToggle={onToggle} />
           </div>
 
           <div className="my-3 border-t border-[hsl(215,15%,16%)]" />
@@ -110,6 +119,8 @@ export default function ControlPanel({ layers, onToggle, health }: ControlPanelP
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Data Feeds</p>
             <LayerRow icon={<Plane className="w-3.5 h-3.5" />} label="Aviation" layerKey="aviation" checked={layers.aviation} onToggle={onToggle} healthStatus={health?.aviation} />
             <LayerRow icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Hazards" layerKey="hazards" checked={layers.hazards} onToggle={onToggle} healthStatus={health?.hazards} />
+            <LayerRow icon={<Globe className="w-3.5 h-3.5" />} label="GDACS Alerts" layerKey="gdacs" checked={layers.gdacs} onToggle={onToggle} healthStatus={health?.gdacs} />
+            <LayerRow icon={<Cable className="w-3.5 h-3.5" />} label="Subsea Cables" layerKey="cables" checked={layers.cables} onToggle={onToggle} healthStatus={health?.cables} />
             <LayerRow icon={<BookOpen className="w-3.5 h-3.5" />} label="Wikipedia" layerKey="wikipedia" checked={layers.wikipedia} onToggle={onToggle} healthStatus={health?.wikipedia} />
             <LayerRow icon={<Camera className="w-3.5 h-3.5" />} label="Surveillance" layerKey="surveillance" checked={layers.surveillance} onToggle={onToggle} healthStatus={health?.surveillance} />
           </div>
