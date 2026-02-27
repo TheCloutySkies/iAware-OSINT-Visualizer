@@ -10,7 +10,11 @@ import {
   type SurveillanceCamera,
   type ApiHealthStatus,
 } from "@shared/schema";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { groups, savedFeatures } from "@shared/models/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
+import { z } from "zod";
 
 const SCRUBBED_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -252,6 +256,126 @@ export async function registerRoutes(
     } catch {
       apiStatus.cables = "red";
       return res.json({ type: "FeatureCollection", features: [] });
+    }
+  });
+
+  const createGroupSchema = z.object({ name: z.string().min(1).max(255) });
+  const createFeatureSchema = z.object({
+    groupId: z.number().int().positive(),
+    featureType: z.string().min(1).max(50),
+    geojsonData: z.string(),
+    color: z.string().max(20).default("#00d4ff"),
+    opacity: z.number().min(0.1).max(1.0).default(0.8),
+  });
+
+  function getUserHash(req: Request): string | null {
+    const user = (req as any).user;
+    return user?.claims?.sub || null;
+  }
+
+  app.get("/api/groups", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserHash(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const result = await db.select().from(groups).where(eq(groups.userId, userId));
+      return res.json(result);
+    } catch {
+      return res.status(500).json({ message: "Failed to fetch groups" });
+    }
+  });
+
+  app.post("/api/groups", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserHash(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const parsed = createGroupSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid group name" });
+      const [group] = await db.insert(groups).values({ userId, name: parsed.data.name }).returning();
+      return res.json(group);
+    } catch {
+      return res.status(500).json({ message: "Failed to create group" });
+    }
+  });
+
+  app.delete("/api/groups/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserHash(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+      await db.delete(groups).where(and(eq(groups.id, groupId), eq(groups.userId, userId)));
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ message: "Failed to delete group" });
+    }
+  });
+
+  app.get("/api/groups/:id/features", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserHash(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+      const [group] = await db.select().from(groups).where(and(eq(groups.id, groupId), eq(groups.userId, userId)));
+      if (!group) return res.status(404).json({ message: "Group not found" });
+      const features = await db.select().from(savedFeatures).where(eq(savedFeatures.groupId, groupId));
+      return res.json(features);
+    } catch {
+      return res.status(500).json({ message: "Failed to fetch features" });
+    }
+  });
+
+  app.post("/api/features", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserHash(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const parsed = createFeatureSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid feature data" });
+      const [group] = await db.select().from(groups).where(and(eq(groups.id, parsed.data.groupId), eq(groups.userId, userId)));
+      if (!group) return res.status(404).json({ message: "Group not found" });
+      const [feature] = await db.insert(savedFeatures).values(parsed.data).returning();
+      return res.json(feature);
+    } catch {
+      return res.status(500).json({ message: "Failed to save feature" });
+    }
+  });
+
+  app.delete("/api/features/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserHash(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const featureId = parseInt(req.params.id);
+      if (isNaN(featureId)) return res.status(400).json({ message: "Invalid feature ID" });
+      const [feature] = await db.select().from(savedFeatures).where(eq(savedFeatures.id, featureId));
+      if (!feature) return res.status(404).json({ message: "Feature not found" });
+      const [group] = await db.select().from(groups).where(and(eq(groups.id, feature.groupId), eq(groups.userId, userId)));
+      if (!group) return res.status(403).json({ message: "Forbidden" });
+      await db.delete(savedFeatures).where(eq(savedFeatures.id, featureId));
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ message: "Failed to delete feature" });
+    }
+  });
+
+  app.get("/api/military", async (req, res) => {
+    try {
+      const parsed = boundingBoxSchema.safeParse(req.query);
+      if (!parsed.success) return res.json([]);
+      const { south, west, north, east } = parsed.data;
+      const query = `[out:json][timeout:15];(way["landuse"="military"](${south},${west},${north},${east});relation["landuse"="military"](${south},${west},${north},${east}););out geom;`;
+      const response = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: `data=${encodeURIComponent(query)}`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": SCRUBBED_USER_AGENT,
+        },
+      });
+      if (!response.ok) return res.json([]);
+      const data = await response.json();
+      return res.json(data);
+    } catch {
+      return res.json([]);
     }
   });
 

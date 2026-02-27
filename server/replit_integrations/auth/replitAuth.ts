@@ -6,7 +6,12 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
+import crypto from "crypto";
 import { authStorage } from "./storage";
+
+function hashUserId(rawId: string): string {
+  return crypto.createHash("sha256").update(rawId).digest("hex");
+}
 
 const getOidcConfig = memoize(
   async () => {
@@ -44,19 +49,24 @@ function updateUserSession(
   user: any,
   tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
 ) {
-  user.claims = tokens.claims();
+  const claims = tokens.claims();
+  user.claims = {
+    ...claims,
+    sub: hashUserId(claims["sub"] as string),
+  };
   user.access_token = tokens.access_token;
   user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
+  user.expires_at = claims?.exp;
 }
 
 async function upsertUser(claims: any) {
+  const hashedId = hashUserId(claims["sub"]);
   await authStorage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
+    id: hashedId,
+    email: null,
+    firstName: null,
+    lastName: null,
+    profileImageUrl: null,
   });
 }
 
@@ -78,10 +88,8 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  // Keep track of registered strategies
   const registeredStrategies = new Set<string>();
 
-  // Helper function to ensure strategy exists for a domain
   const ensureStrategy = (domain: string) => {
     const strategyName = `replitauth:${domain}`;
     if (!registeredStrategies.has(strategyName)) {

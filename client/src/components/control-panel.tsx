@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Layers, ChevronRight, ChevronLeft, Plane, AlertTriangle, BookOpen, Camera, Map, TrainFront, Zap, Mountain, Shield, Flame, Globe, Cable } from "lucide-react";
+import {
+  Layers, ChevronRight, ChevronLeft, Plane, AlertTriangle, BookOpen,
+  Camera, Map, TrainFront, Zap, Mountain, Shield, Flame, Globe, Cable,
+  Satellite, TreePine, Crosshair
+} from "lucide-react";
 import type { ApiHealthStatus } from "@shared/schema";
+
+export type BaseMap = "dark" | "osm_standard" | "satellite" | "hybrid" | "usgs_topo";
 
 export interface LayerVisibility {
   osm: boolean;
@@ -16,12 +22,16 @@ export interface LayerVisibility {
   firms: boolean;
   gdacs: boolean;
   cables: boolean;
+  publicLands: boolean;
+  military: boolean;
 }
 
 interface ControlPanelProps {
   layers: LayerVisibility;
   onToggle: (layer: keyof LayerVisibility) => void;
   health: ApiHealthStatus | null;
+  baseMap: BaseMap;
+  onBaseMapChange: (base: BaseMap) => void;
 }
 
 function StatusDot({ status }: { status: "green" | "yellow" | "red" }) {
@@ -64,7 +74,15 @@ function LayerRow({ icon, label, layerKey, checked, onToggle, healthStatus }: La
   );
 }
 
-export default function ControlPanel({ layers, onToggle, health }: ControlPanelProps) {
+const BASE_MAP_OPTIONS: { value: BaseMap; label: string }[] = [
+  { value: "dark", label: "Dark Matter" },
+  { value: "osm_standard", label: "OpenStreetMap" },
+  { value: "satellite", label: "Satellite (Esri)" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "usgs_topo", label: "USGS Topo" },
+];
+
+export default function ControlPanel({ layers, onToggle, health, baseMap, onBaseMapChange }: ControlPanelProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -104,13 +122,36 @@ export default function ControlPanel({ layers, onToggle, health }: ControlPanelP
           </div>
 
           <div className="space-y-1">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Base Map</p>
+            <div className="space-y-1">
+              {BASE_MAP_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  data-testid={`basemap-${opt.value}`}
+                  onClick={() => onBaseMapChange(opt.value)}
+                  className={`w-full text-left text-xs px-2 py-1.5 rounded transition-colors ${
+                    baseMap === opt.value
+                      ? "bg-[hsl(195,90%,48%)] bg-opacity-20 text-[hsl(195,90%,70%)] font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="my-3 border-t border-[hsl(215,15%,16%)]" />
+
+          <div className="space-y-1">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Tile Overlays</p>
-            <LayerRow icon={<Map className="w-3.5 h-3.5" />} label="OpenStreetMap" layerKey="osm" checked={layers.osm} onToggle={onToggle} />
             <LayerRow icon={<TrainFront className="w-3.5 h-3.5" />} label="Railway Map" layerKey="railway" checked={layers.railway} onToggle={onToggle} />
             <LayerRow icon={<Zap className="w-3.5 h-3.5" />} label="Transport Infra" layerKey="infrastructure" checked={layers.infrastructure} onToggle={onToggle} />
             <LayerRow icon={<Mountain className="w-3.5 h-3.5" />} label="Topographic" layerKey="topomap" checked={layers.topomap} onToggle={onToggle} />
             <LayerRow icon={<Shield className="w-3.5 h-3.5" />} label="Airspace (AIP)" layerKey="openaip" checked={layers.openaip} onToggle={onToggle} />
             <LayerRow icon={<Flame className="w-3.5 h-3.5" />} label="NASA FIRMS Fires" layerKey="firms" checked={layers.firms} onToggle={onToggle} />
+            <LayerRow icon={<TreePine className="w-3.5 h-3.5" />} label="Public Lands" layerKey="publicLands" checked={layers.publicLands} onToggle={onToggle} />
+            <LayerRow icon={<Crosshair className="w-3.5 h-3.5" />} label="Military Bases" layerKey="military" checked={layers.military} onToggle={onToggle} />
           </div>
 
           <div className="my-3 border-t border-[hsl(215,15%,16%)]" />

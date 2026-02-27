@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
-import { Marker, Popup, TileLayer, GeoJSON, useMap, useMapEvents } from "react-leaflet";
+import { useState, useMemo, useEffect } from "react";
+import { Marker, Popup, TileLayer, WMSTileLayer, GeoJSON, Polygon, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { useQuery } from "@tanstack/react-query";
 import type { FlightData, HazardEvent, WikiArticle, SurveillanceCamera } from "@shared/schema";
-import type { LayerVisibility } from "./control-panel";
+import type { LayerVisibility, BaseMap } from "./control-panel";
 
 function useBounds() {
   const map = useMap();
@@ -100,16 +100,60 @@ const cameraIcon = createSvgIcon(
   [18, 18]
 );
 
-export function TileOverlays({ layers }: { layers: LayerVisibility }) {
-  return (
-    <>
-      {layers.osm && (
+export function BaseMapLayer({ baseMap }: { baseMap: BaseMap }) {
+  switch (baseMap) {
+    case "osm_standard":
+      return (
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
-          opacity={0.4}
         />
-      )}
+      );
+    case "satellite":
+      return (
+        <TileLayer
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          attribution='&copy; Esri'
+          maxZoom={19}
+        />
+      );
+    case "hybrid":
+      return (
+        <>
+          <TileLayer
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            attribution='&copy; Esri'
+            maxZoom={19}
+          />
+          <TileLayer
+            url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+            attribution='&copy; Esri'
+            maxZoom={19}
+          />
+        </>
+      );
+    case "usgs_topo":
+      return (
+        <TileLayer
+          url="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}"
+          attribution='&copy; USGS'
+          maxZoom={16}
+        />
+      );
+    case "dark":
+    default:
+      return (
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; OpenStreetMap &copy; CARTO'
+        />
+      );
+  }
+}
+
+export function TileOverlays({ layers }: { layers: LayerVisibility }) {
+  return (
+    <>
       {layers.railway && (
         <TileLayer
           url="https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png"
@@ -119,14 +163,14 @@ export function TileOverlays({ layers }: { layers: LayerVisibility }) {
       {layers.infrastructure && (
         <TileLayer
           url="https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://memomaps.de/">MeMoMaps</a> &copy; OpenStreetMap'
+          attribution='&copy; MeMoMaps &copy; OpenStreetMap'
           maxZoom={17}
         />
       )}
       {layers.topomap && (
         <TileLayer
           url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+          attribution='&copy; OpenTopoMap'
           maxZoom={17}
           opacity={0.7}
         />
@@ -134,7 +178,7 @@ export function TileOverlays({ layers }: { layers: LayerVisibility }) {
       {layers.openaip && (
         <TileLayer
           url="https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openaip.net">OpenAIP</a>'
+          attribution='&copy; OpenAIP'
           tms={true}
           opacity={0.7}
         />
@@ -145,6 +189,18 @@ export function TileOverlays({ layers }: { layers: LayerVisibility }) {
           attribution='&copy; NASA FIRMS'
           maxZoom={11}
           opacity={0.9}
+        />
+      )}
+      {layers.publicLands && (
+        <WMSTileLayer
+          url="https://services.nationalmap.gov/arcgis/services/govunits/MapServer/WMSServer"
+          params={{
+            layers: "11",
+            format: "image/png",
+            transparent: true,
+          }}
+          opacity={0.5}
+          attribution='&copy; USGS PAD-US'
         />
       )}
     </>
@@ -448,5 +504,64 @@ export function SubmarineCablesLayer() {
       style={style}
       onEachFeature={onEachFeature}
     />
+  );
+}
+
+interface MilitaryElement {
+  type: string;
+  id: number;
+  geometry: { lat: number; lon: number }[];
+  tags?: Record<string, string>;
+}
+
+export function MilitaryBasesLayer() {
+  const bounds = useBounds();
+  const map = useMap();
+  const zoom = map.getZoom();
+
+  const { data: elements } = useQuery<MilitaryElement[]>({
+    queryKey: ["/api/military", Math.round(bounds.south), Math.round(bounds.west), Math.round(bounds.north), Math.round(bounds.east)],
+    queryFn: async () => {
+      if (zoom < 8) return [];
+      const res = await fetch(
+        `/api/military?south=${bounds.south}&west=${bounds.west}&north=${bounds.north}&east=${bounds.east}`
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.elements || [];
+    },
+    staleTime: 300000,
+    enabled: zoom >= 8,
+  });
+
+  if (!elements || zoom < 8) return null;
+
+  return (
+    <>
+      {elements.filter(el => el.geometry && el.geometry.length > 2).slice(0, 100).map((el) => {
+        const positions: [number, number][] = el.geometry.map(g => [g.lat, g.lon]);
+        return (
+          <Polygon
+            key={el.id}
+            positions={positions}
+            pathOptions={{ color: "#ef4444", weight: 2, fillColor: "#ef4444", fillOpacity: 0.15 }}
+          >
+            <Popup>
+              <div style={{ color: "#e2e8f0", background: "#0f172a", padding: "8px", borderRadius: "6px", minWidth: "160px", fontSize: "12px" }}>
+                <div style={{ fontWeight: 700, color: "#ef4444", marginBottom: "4px" }}>
+                  {el.tags?.name || "Military Installation"}
+                </div>
+                {el.tags?.["military"] && (
+                  <div>Type: {el.tags["military"]}</div>
+                )}
+                {el.tags?.operator && (
+                  <div>Operator: {el.tags.operator}</div>
+                )}
+              </div>
+            </Popup>
+          </Polygon>
+        );
+      })}
+    </>
   );
 }
