@@ -234,6 +234,49 @@
   color: hsl(195, 60%, 40%) !important;
 }
 
+.leaflet-draw-toolbar a {
+  background-color: hsla(220, 18%, 8%, 0.92) !important;
+  border-color: hsl(215, 15%, 16%) !important;
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-draw-toolbar a:hover {
+  background-color: hsla(220, 18%, 14%, 0.95) !important;
+}
+
+.leaflet-draw-actions {
+  background: hsla(220, 18%, 8%, 0.95) !important;
+  border-color: hsl(215, 15%, 16%) !important;
+}
+
+.leaflet-draw-actions a {
+  color: hsl(200, 15%, 72%) !important;
+  background: transparent !important;
+  border-color: hsl(215, 15%, 16%) !important;
+  font-size: 11px !important;
+}
+
+.leaflet-draw-actions a:hover {
+  background: hsla(215, 15%, 16%, 0.6) !important;
+}
+
+.leaflet-draw-tooltip {
+  background: hsla(220, 18%, 8%, 0.92) !important;
+  color: hsl(200, 15%, 72%) !important;
+  border-color: hsl(215, 15%, 16%) !important;
+  font-size: 11px !important;
+}
+
+.leaflet-draw-tooltip-subtext {
+  color: hsl(215, 10%, 48%) !important;
+}
+
+.leaflet-edit-resize,
+.leaflet-edit-move {
+  border-color: hsl(195, 90%, 48%) !important;
+  background-color: hsl(195, 90%, 48%) !important;
+}
+
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.

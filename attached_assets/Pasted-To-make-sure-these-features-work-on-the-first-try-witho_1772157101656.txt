@@ -1,0 +1,27 @@
+To make sure these features work on the first try without breaking your current build, we need to be very specific about the libraries Replit uses.
+For drawing, standard React-Leaflet wrappers often break with newer React versions. The most stable method is instructing the AI to use native Leaflet plugins via a custom hook. For exports, jspdf combined with html2canvas is the industry standard for client-side document generation.
+The Security & Anti-Tracking Protocol
+External APIs track users through three main data points:
+ * IP Address: Bypassed completely by your Express backend. The APIs will only see Replit's server IP, acting as a shield.
+ * Referer Headers: Browsers tell APIs what website you are calling them from. We will kill this at the HTML level.
+ * User-Agent: Browsers announce your device type. We will configure the backend proxy to scrub this and replace it with a generic server string.
+Copy and paste this directly into Replit:
+> I want to safely upgrade the map with drawing tools, advanced export features, and strict anti-tracking security. Do not overwrite the existing proxy architecture; build upon it. Follow these steps exactly to ensure stability:
+> STEP 1: INSTALL DEPENDENCIES
+> Install leaflet-draw, html2canvas, and jspdf.
+> STEP 2: IMPLEMENT STRICT ANTI-TRACKING
+>  * Frontend: Add <meta name="referrer" content="no-referrer"> to the index.html head to prevent the browser from leaking the app's URL to third-party map tile servers.
+>  * Backend Proxy: Update every Express route fetching external APIs. Explicitly delete the X-Forwarded-For, Forwarded, and Via headers from the incoming request so the user's real IP is never passed along. Hardcode a generic User-Agent (e.g., Mozilla/5.0 (Windows NT 10.0; Win64; x64)) for all outbound axios or node-fetch calls so the APIs cannot fingerprint the user's device.
+> STEP 3: ADD DRAWING & ANNOTATION TOOLS
+>  * Create a new React component called MapDrawTools. Use the useMap hook from react-leaflet to access the native Leaflet map instance.
+>  * Instantiate leaflet-draw controls directly onto that map instance, providing options to draw Polygons, Rectangles, Circles, and text Markers.
+>  * Ensure the drawn elements are stored in a Leaflet FeatureGroup so they persist on the map layer. Add a "Trash" button to clear all annotations.
+> STEP 4: UPGRADE THE EXPORT MODULE (JPG & PDF)
+>  * Update the existing screenshot button into a dual-option dropdown or modal: "Export as JPG" and "Export as PDF".
+>  * For JPG: Use html2canvas targeting the map container (useCORS: true, allowTaint: true). Trigger a download of the resulting canvas as a .jpg file.
+>  * For PDF: Run the same html2canvas capture, then instantiate a new jsPDF document (landscape format). Calculate the aspect ratio of the captured canvas, fit the image to the PDF page dimensions using doc.addImage(), and trigger a download of the .pdf file.
+>  * Ensure the map controls (zoom buttons, layer toggles) are temporarily hidden right before the canvas capture and restored immediately after, so the final exported files only show the map, the data layers, and the user's drawn annotations.
+> 
+Nuance on the Export Feature
+When you draw on the map and hit export, mobile browsers (like Safari on iOS) handle PDF generation perfectly, but they can sometimes be aggressive about blocking automatic file downloads if they take too long to process. The AI is instructed to temporarily hide the UI during capture—if you notice a brief flicker when you tap the export button, that is intentional to keep the final image clean.
+Would you like me to map out how to structure a secure local database on this Replit instance so you can save these drawn shapes and reload them later without sending them to the cloud?

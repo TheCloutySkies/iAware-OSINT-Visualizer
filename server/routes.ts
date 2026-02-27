@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import {
   boundingBoxSchema,
@@ -11,7 +11,8 @@ import {
   type ApiHealthStatus,
 } from "@shared/schema";
 
-const USER_AGENT = "OSINTTacticalMap/1.0 (https://replit.com)";
+const SCRUBBED_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const apiStatus: ApiHealthStatus = {
   aviation: "yellow",
@@ -20,10 +21,22 @@ const apiStatus: ApiHealthStatus = {
   surveillance: "yellow",
 };
 
+function stripTrackingHeaders(req: Request) {
+  delete req.headers["x-forwarded-for"];
+  delete req.headers["forwarded"];
+  delete req.headers["via"];
+  delete req.headers["x-real-ip"];
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
+    stripTrackingHeaders(req);
+    next();
+  });
 
   app.get("/api/aviation", async (req, res) => {
     try {
@@ -33,7 +46,9 @@ export async function registerRoutes(
       }
       const { south, west, north, east } = parsed.data;
       const url = `https://opensky-network.org/api/states/all?lamin=${south}&lomin=${west}&lamax=${north}&lomax=${east}`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { "User-Agent": SCRUBBED_USER_AGENT },
+      });
       if (!response.ok) {
         apiStatus.aviation = "red";
         return res.json([]);
@@ -66,7 +81,9 @@ export async function registerRoutes(
   app.get("/api/hazards", async (_req, res) => {
     try {
       const url = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open";
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { "User-Agent": SCRUBBED_USER_AGENT },
+      });
       if (!response.ok) {
         apiStatus.hazards = "red";
         return res.json([]);
@@ -102,7 +119,7 @@ export async function registerRoutes(
       const { lat, lon, radius } = parsed.data;
       const url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=${radius}&gslimit=50&format=json`;
       const response = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT },
+        headers: { "User-Agent": SCRUBBED_USER_AGENT },
       });
       if (!response.ok) {
         apiStatus.wikipedia = "red";
@@ -136,7 +153,10 @@ export async function registerRoutes(
       const query = `[out:json][timeout:10];node["man_made"="surveillance"](${south},${west},${north},${east});out body;`;
       const response = await fetch("https://overpass-api.de/api/interpreter", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": SCRUBBED_USER_AGENT,
+        },
         body: `data=${encodeURIComponent(query)}`,
       });
       if (!response.ok) {
@@ -169,7 +189,7 @@ export async function registerRoutes(
       const { lat, lon } = parsed.data;
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`;
       const response = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT },
+        headers: { "User-Agent": SCRUBBED_USER_AGENT },
       });
       if (!response.ok) {
         return res.json({ error: "Geocoding failed" });

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ApiHealthStatus } from "@shared/schema";
 import ControlPanel, { type LayerVisibility } from "@/components/control-panel";
 import MapControls from "@/components/map-controls";
+import MapDrawTools from "@/components/map-draw-tools";
 import {
   TileOverlays,
   AviationLayer,
@@ -75,6 +76,7 @@ export default function MapPage() {
         {layers.marine && <MarineLayer />}
 
         <MapControls />
+        <MapDrawTools />
       </MapContainer>
 
       <ControlPanel layers={layers} onToggle={handleToggle} health={health ?? null} />
