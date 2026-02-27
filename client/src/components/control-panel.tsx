@@ -101,7 +101,7 @@ export default function ControlPanel({ layers, onToggle, health }: ControlPanelP
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Tile Overlays</p>
             <LayerRow icon={<Map className="w-3.5 h-3.5" />} label="OpenStreetMap" layerKey="osm" checked={layers.osm} onToggle={onToggle} />
             <LayerRow icon={<TrainFront className="w-3.5 h-3.5" />} label="Railway Map" layerKey="railway" checked={layers.railway} onToggle={onToggle} />
-            <LayerRow icon={<Zap className="w-3.5 h-3.5" />} label="Infrastructure" layerKey="infrastructure" checked={layers.infrastructure} onToggle={onToggle} />
+            <LayerRow icon={<Zap className="w-3.5 h-3.5" />} label="Transport Infra" layerKey="infrastructure" checked={layers.infrastructure} onToggle={onToggle} />
           </div>
 
           <div className="my-3 border-t border-[hsl(215,15%,16%)]" />

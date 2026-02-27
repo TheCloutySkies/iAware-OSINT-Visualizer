@@ -118,8 +118,9 @@ export function TileOverlays({ layers }: { layers: LayerVisibility }) {
       )}
       {layers.infrastructure && (
         <TileLayer
-          url="https://tiles.openinframap.org/{z}/{x}/{y}.png"
-          attribution='OpenInfraMap'
+          url="https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://memomaps.de/">MeMoMaps</a> &copy; OpenStreetMap'
+          maxZoom={17}
         />
       )}
     </>
