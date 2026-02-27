@@ -93,44 +93,44 @@
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
-  --background: 0 0% 0%;
-  --foreground: 200 6.67% 91.18%;
-  --border: 210 5.26% 14.9%;
-  --card: 228 9.8% 10%;
-  --card-foreground: 0 0% 85.1%;
-  --card-border: 210 5.26% 16%;
-  --sidebar: 228 9.8% 10%;
-  --sidebar-foreground: 0 0% 85.1%;
-  --sidebar-border: 205.71 15.79% 26.08%;
-  --sidebar-primary: 203.87 87.6% 52.55%;
+  --background: 220 20% 4%;
+  --foreground: 200 15% 82%;
+  --border: 215 15% 14%;
+  --card: 220 18% 8%;
+  --card-foreground: 200 12% 80%;
+  --card-border: 215 15% 16%;
+  --sidebar: 220 18% 7%;
+  --sidebar-foreground: 200 12% 80%;
+  --sidebar-border: 215 15% 18%;
+  --sidebar-primary: 195 90% 48%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 205.71 70% 7.84%;
-  --sidebar-accent-foreground: 203.87 87.6% 52.55%;
-  --sidebar-ring: 202.82 89.12% 53.14%;
-  --popover: 0 0% 0%;
-  --popover-foreground: 200 6.67% 91.18%;
-  --popover-border: 210 5.26% 10%;
-  --primary: 203.77 87.6% 52.55%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 195 15.38% 94.9%;
-  --secondary-foreground: 210 25% 7.84%;
-  --muted: 0 0% 9.41%;
-  --muted-foreground: 210 3.39% 46.27%;
-  --accent: 205.71 70% 7.84%;
-  --accent-foreground: 203.77 87.6% 52.55%;
-  --destructive: 356.3 90.56% 54.31%;
+  --sidebar-accent: 215 50% 10%;
+  --sidebar-accent-foreground: 195 90% 48%;
+  --sidebar-ring: 195 90% 48%;
+  --popover: 220 20% 6%;
+  --popover-foreground: 200 15% 82%;
+  --popover-border: 215 15% 12%;
+  --primary: 195 90% 48%;
+  --primary-foreground: 220 25% 5%;
+  --secondary: 200 15% 82%;
+  --secondary-foreground: 220 20% 8%;
+  --muted: 220 15% 12%;
+  --muted-foreground: 215 10% 48%;
+  --accent: 215 50% 10%;
+  --accent-foreground: 195 90% 48%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --input: 207.69 27.66% 18.43%;
-  --ring: 202.82 89.12% 53.14%;
-  --chart-1: 203.89 88.28% 53.14%;
-  --chart-2: 159.78 100% 36.08%;
-  --chart-3: 42.03 92.83% 56.27%;
-  --chart-4: 147.14 78.5% 41.96%;
-  --chart-5: 341.49 75.2% 50.98%;
-  --font-sans: Open Sans, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
-  --radius: 1.3rem;
+  --input: 215 18% 16%;
+  --ring: 195 90% 48%;
+  --chart-1: 195 90% 48%;
+  --chart-2: 160 100% 36%;
+  --chart-3: 42 93% 56%;
+  --chart-4: 147 78% 42%;
+  --chart-5: 341 75% 51%;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Geist', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 0.5rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
@@ -178,7 +178,60 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    overflow: hidden;
   }
+}
+
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+.leaflet-popup-tip {
+  background: #0f172a !important;
+}
+
+.leaflet-popup-close-button {
+  color: #64748b !important;
+  font-size: 18px !important;
+  padding: 4px 6px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #e2e8f0 !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: hsla(220, 18%, 8%, 0.92) !important;
+  color: hsl(200, 15%, 72%) !important;
+  border-color: hsl(215, 15%, 16%) !important;
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: hsla(220, 18%, 14%, 0.95) !important;
+}
+
+.leaflet-control-attribution {
+  background: hsla(220, 18%, 8%, 0.7) !important;
+  color: hsl(215, 10%, 40%) !important;
+  font-size: 9px !important;
+  backdrop-filter: blur(8px);
+}
+
+.leaflet-control-attribution a {
+  color: hsl(195, 60%, 40%) !important;
 }
 
 /**
