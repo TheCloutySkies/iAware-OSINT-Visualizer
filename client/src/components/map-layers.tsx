@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { useQuery } from "@tanstack/react-query";
-import type { FlightData, HazardEvent, WikiArticle, SurveillanceCamera, MarineVessel } from "@shared/schema";
+import type { FlightData, HazardEvent, WikiArticle, SurveillanceCamera } from "@shared/schema";
 import type { LayerVisibility } from "./control-panel";
 
 function useBounds() {
@@ -99,14 +99,6 @@ const cameraIcon = createSvgIcon(
   </svg>`,
   [18, 18]
 );
-
-const vesselSvg = (heading: number) => `
-  <div style="transform: rotate(${heading || 0}deg); display: flex; align-items: center; justify-content: center;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L6 18H18L12 2Z" fill="#22d3ee" stroke="#0a1628" stroke-width="0.5"/>
-    </svg>
-  </div>
-`;
 
 export function TileOverlays({ layers }: { layers: LayerVisibility }) {
   return (
@@ -317,102 +309,3 @@ export function SurveillanceLayer() {
   );
 }
 
-export function MarineLayer() {
-  const [vessels, setVessels] = useState<Map<number, MarineVessel>>(new Map());
-  const wsRef = useRef<WebSocket | null>(null);
-  const bounds = useBounds();
-
-  const connectWs = useCallback(() => {
-    const API_KEY = "<YOUR_AISSTREAM_API_KEY>";
-
-    if (API_KEY === "<YOUR_AISSTREAM_API_KEY>") {
-      return;
-    }
-
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-
-    const ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      ws.send(
-        JSON.stringify({
-          APIKey: API_KEY,
-          BoundingBoxes: [
-            [
-              [bounds.south, bounds.west],
-              [bounds.north, bounds.east],
-            ],
-          ],
-          FiltersShipMMSI: [],
-          FilterMessageTypes: ["PositionReport"],
-        })
-      );
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.MessageType === "PositionReport") {
-          const report = data.Message?.PositionReport;
-          const meta = data.MetaData;
-          if (report && meta) {
-            setVessels((prev) => {
-              const updated = new Map(prev);
-              updated.set(meta.MMSI, {
-                mmsi: meta.MMSI,
-                name: meta.ShipName?.trim() || `MMSI ${meta.MMSI}`,
-                latitude: report.Latitude,
-                longitude: report.Longitude,
-                cog: report.Cog || 0,
-                sog: report.Sog || 0,
-                heading: report.TrueHeading || report.Cog || 0,
-                shipType: meta.ShipType || 0,
-                timestamp: meta.time_utc || new Date().toISOString(),
-              });
-              return updated;
-            });
-          }
-        }
-      } catch {}
-    };
-
-    ws.onerror = () => {};
-    ws.onclose = () => {};
-  }, [bounds.south, bounds.west, bounds.north, bounds.east]);
-
-  useEffect(() => {
-    connectWs();
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [connectWs]);
-
-  return (
-    <>
-      {Array.from(vessels.values()).map((v) => (
-        <Marker
-          key={v.mmsi}
-          position={[v.latitude, v.longitude]}
-          icon={createSvgIcon(vesselSvg(v.heading), [16, 16])}
-        >
-          <Popup>
-            <div style={{ color: "#e2e8f0", background: "#0f172a", padding: "8px", borderRadius: "6px", minWidth: "180px", fontSize: "12px" }}>
-              <div style={{ fontWeight: 700, color: "#22d3ee", marginBottom: "4px" }}>
-                {v.name}
-              </div>
-              <div>MMSI: {v.mmsi}</div>
-              <div>Speed: {v.sog.toFixed(1)} knots</div>
-              <div>Course: {v.cog.toFixed(0)}°</div>
-              <div>Heading: {v.heading.toFixed(0)}°</div>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </>
-  );
-}

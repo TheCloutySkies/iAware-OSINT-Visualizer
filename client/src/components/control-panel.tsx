@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Layers, ChevronRight, ChevronLeft, Plane, Ship, AlertTriangle, BookOpen, Camera, Map, TrainFront, Zap } from "lucide-react";
+import { Layers, ChevronRight, ChevronLeft, Plane, AlertTriangle, BookOpen, Camera, Map, TrainFront, Zap } from "lucide-react";
 import type { ApiHealthStatus } from "@shared/schema";
 
 export interface LayerVisibility {
@@ -8,7 +8,6 @@ export interface LayerVisibility {
   railway: boolean;
   infrastructure: boolean;
   aviation: boolean;
-  marine: boolean;
   hazards: boolean;
   wikipedia: boolean;
   surveillance: boolean;
@@ -110,7 +109,6 @@ export default function ControlPanel({ layers, onToggle, health }: ControlPanelP
           <div className="space-y-1">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Data Feeds</p>
             <LayerRow icon={<Plane className="w-3.5 h-3.5" />} label="Aviation" layerKey="aviation" checked={layers.aviation} onToggle={onToggle} healthStatus={health?.aviation} />
-            <LayerRow icon={<Ship className="w-3.5 h-3.5" />} label="Marine AIS" layerKey="marine" checked={layers.marine} onToggle={onToggle} />
             <LayerRow icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Hazards" layerKey="hazards" checked={layers.hazards} onToggle={onToggle} healthStatus={health?.hazards} />
             <LayerRow icon={<BookOpen className="w-3.5 h-3.5" />} label="Wikipedia" layerKey="wikipedia" checked={layers.wikipedia} onToggle={onToggle} healthStatus={health?.wikipedia} />
             <LayerRow icon={<Camera className="w-3.5 h-3.5" />} label="Surveillance" layerKey="surveillance" checked={layers.surveillance} onToggle={onToggle} healthStatus={health?.surveillance} />

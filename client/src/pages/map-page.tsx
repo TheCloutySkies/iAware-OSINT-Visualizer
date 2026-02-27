@@ -11,7 +11,6 @@ import {
   HazardsLayer,
   WikipediaLayer,
   SurveillanceLayer,
-  MarineLayer,
 } from "@/components/map-layers";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,7 +24,6 @@ export default function MapPage() {
     railway: false,
     infrastructure: false,
     aviation: true,
-    marine: false,
     hazards: true,
     wikipedia: false,
     surveillance: false,
@@ -73,7 +71,6 @@ export default function MapPage() {
         {layers.hazards && <HazardsLayer />}
         {layers.wikipedia && <WikipediaLayer />}
         {layers.surveillance && <SurveillanceLayer />}
-        {layers.marine && <MarineLayer />}
 
         <MapControls />
         <MapDrawTools />

@@ -37,18 +37,6 @@ export interface SurveillanceCamera {
   tags: Record<string, string>;
 }
 
-export interface MarineVessel {
-  mmsi: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  cog: number;
-  sog: number;
-  heading: number;
-  shipType: number;
-  timestamp: string;
-}
-
 export interface BoundingBox {
   south: number;
   west: number;

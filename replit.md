@@ -16,8 +16,7 @@ A full-stack OSINT and situational awareness map application with real-time data
 ## Key Features
 1. **Map Tile Layers**: CartoDB Dark Matter (base), OpenStreetMap, OpenRailwayMap, OpenInfrastructureMap
 2. **Aviation Data**: OpenSky Network API - live flight tracking with rotated aircraft icons
-3. **Marine Data**: AIS Stream WebSocket (requires API key placeholder)
-4. **Hazard Data**: NASA EONET API - wildfires and severe storms
+3. **Hazard Data**: NASA EONET API - wildfires and severe storms
 5. **Wikipedia Geo**: MediaWiki geosearch API
 6. **Surveillance Cameras**: Overpass API querying OSM surveillance nodes
 7. **Drawing Tools**: Leaflet-Draw for polygons, rectangles, circles, polylines, markers with edit/delete
