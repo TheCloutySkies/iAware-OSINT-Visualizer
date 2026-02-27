@@ -13,12 +13,15 @@ import {
   SurveillanceLayer,
 } from "@/components/map-layers";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { LogOut, User } from "lucide-react";
 
 const US_CENTER: [number, number] = [39.8283, -98.5795];
 const DEFAULT_ZOOM = 5;
 
 export default function MapPage() {
   const { toast } = useToast();
+  const { user, logout } = useAuth();
   const [layers, setLayers] = useState<LayerVisibility>({
     osm: false,
     railway: false,
@@ -77,6 +80,40 @@ export default function MapPage() {
       </MapContainer>
 
       <ControlPanel layers={layers} onToggle={handleToggle} health={health ?? null} />
+
+      <div
+        data-testid="user-profile"
+        className="absolute top-3 left-3 z-[1000] flex items-center gap-2"
+      >
+        <div
+          className="flex items-center gap-2 rounded-md border border-[hsl(215,15%,16%)] px-3 py-2"
+          style={{ backgroundColor: "hsla(220, 18%, 8%, 0.92)", backdropFilter: "blur(12px)" }}
+        >
+          {user?.profileImageUrl ? (
+            <img
+              src={user.profileImageUrl}
+              alt=""
+              className="w-6 h-6 rounded-full"
+              data-testid="img-avatar"
+            />
+          ) : (
+            <User className="w-4 h-4 text-[hsl(195,90%,48%)]" />
+          )}
+          <span className="text-xs font-mono text-[hsl(200,15%,72%)]" data-testid="text-username">
+            {user?.firstName || user?.email || "Operator"}
+          </span>
+          <button
+            data-testid="button-logout"
+            onClick={() => logout()}
+            className="ml-1 p-1 rounded text-[hsl(215,10%,48%)] transition-colors"
+            onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(0, 72%, 51%)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "hsl(215, 10%, 48%)")}
+            title="Sign Out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
 
       <div
         data-testid="text-branding"

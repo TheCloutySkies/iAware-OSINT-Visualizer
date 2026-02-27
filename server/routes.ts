@@ -10,6 +10,7 @@ import {
   type SurveillanceCamera,
   type ApiHealthStatus,
 } from "@shared/schema";
+import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
 const SCRUBBED_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -32,6 +33,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  await setupAuth(app);
+  registerAuthRoutes(app);
 
   app.use("/api", (req: Request, _res: Response, next: NextFunction) => {
     stripTrackingHeaders(req);

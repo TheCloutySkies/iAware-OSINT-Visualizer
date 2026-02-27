@@ -6,12 +6,21 @@ A full-stack OSINT and situational awareness map application with real-time data
 ## Architecture
 - **Frontend**: React + Vite + Tailwind CSS + React-Leaflet (v4) + Leaflet-Draw
 - **Backend**: Node.js + Express (API proxy for external services)
-- **No database** - all data comes from external APIs
+- **Database**: PostgreSQL (Drizzle ORM) for user accounts and sessions
+- **Auth**: Replit Auth (OpenID Connect via passport)
 
 ## Security / Anti-Tracking
 - `<meta name="referrer" content="no-referrer">` in index.html prevents referer leaking
 - Backend strips `X-Forwarded-For`, `Forwarded`, `Via`, `X-Real-IP` headers from all `/api` requests
 - All outbound API calls use a generic Chrome User-Agent string to prevent device fingerprinting
+
+## Authentication
+- Replit Auth via OpenID Connect (Google, GitHub, X, Apple, email/password)
+- Session stored in PostgreSQL via connect-pg-simple
+- Landing page shown to unauthenticated users, map shown after login
+- User profile badge with avatar and logout button on the map page
+- Auth files in `server/replit_integrations/auth/` — do not modify
+- User/session schemas in `shared/models/auth.ts` — do not drop these tables
 
 ## Key Features
 1. **Map Tile Layers**: CartoDB Dark Matter (base), OpenStreetMap, OpenRailwayMap, OpenInfrastructureMap

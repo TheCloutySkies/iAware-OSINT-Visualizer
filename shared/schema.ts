@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export * from "./models/auth";
+
 export interface FlightData {
   icao24: string;
   callsign: string | null;

@@ -1,0 +1,31 @@
+Here are 5 highly reliable, open-source databases that are standard in OSINT and tactical mapping. They use formats (GeoJSON, XYZ Tiles, and WMS) that drop natively into your React-Leaflet setup without requiring complex parsing.
+1. GDACS (Global Disaster Alert and Coordination System)
+ * The Data: A joint initiative by the UN and the European Commission. It provides real-time alerts for earthquakes, tsunamis, tropical cyclones, and floods.
+ * The Nuance: GDACS provides a live, continuously updated GeoJSON feed. Because it categorizes events by severity (Green, Orange, Red), you can have Leaflet dynamically color-code the markers based on the threat level.
+2. TeleGeography Submarine Cable Map
+ * The Data: The physical backbone of the global internet. This maps every underwater fiber-optic cable and coastal landing point on Earth.
+ * The Nuance: TeleGeography maintains this as an open repository on GitHub. Pulling their raw GeoJSON file allows you to see the exact paths of communications infrastructure, which is critical for mapping out potential telecom vulnerabilities or choke points.
+3. OpenAIP (Aeronautical Information Project)
+ * The Data: Worldwide aviation data, specifically controlled airspaces, restricted flight zones, and Military Operating Areas (MOAs).
+ * The Nuance: While ADS-B shows you where aircraft are, OpenAIP shows you where they are allowed to be. It operates as a standard XYZ tile layer with transparent backgrounds, making it perfect to overlay on top of your dark base map to see if an aircraft is circling inside a restricted MOA.
+4. NASA FIRMS (Fire Information for Resource Management System)
+ * The Data: Near real-time thermal anomalies and active fires detected by MODIS and VIIRS satellites.
+ * The Nuance: This is heavily used by wildland firefighters and tactical teams to track active burn perimeters. Instead of XYZ tiles, NASA serves this via WMS (Web Map Service). Leaflet has a native <WMSTileLayer> component that handles this perfectly.
+5. OpenTopoMap (Tactical Topography)
+ * The Data: High-contrast topographic maps derived from SRTM (Shuttle Radar Topography Mission) elevation data and OpenStreetMap.
+ * The Nuance: Standard street maps are useless for ground awareness outside of cities. OpenTopoMap provides detailed contour lines, hill shading, and elevation data. It is a drop-in XYZ tile layer that you can toggle on when tracking assets over mountainous or rural terrain.
+The Replit Implementation Prompt
+Copy and paste this directly into your Replit chat. It instructs the AI to add these 5 layers seamlessly alongside your existing setup, ensuring the React components handle the different data types (WMS, XYZ, GeoJSON) correctly.
+> Safely add 5 new OSINT layers to the React-Leaflet map. Do not alter the backend proxy, drawing tools, export features, or security headers. Integrate these cleanly into the existing UI control panel.
+> STEP 1: ADD NEW TILE LAYERS (XYZ & WMS)
+> Inside the Leaflet <LayersControl>, add the following as Overlay layers:
+>  * OpenTopoMap (XYZ): https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png. Set attribution to OpenTopoMap.
+>  * OpenAIP Airspace (XYZ): https://{s}.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@EPSG%3A900913@png/{z}/{x}/{y}.png. (Note: OpenAIP TMS requires the Y coordinate to be inverted, so add tms: true to the TileLayer props).
+>  * NASA FIRMS (WMS): Use the native <WMSTileLayer> component. URL: https://map1.vis.earthdata.nasa.gov/wmts-webmerc/FIRMS_Active_Fires/default/default/GoogleMapsCompatible_Level11/{z}/{y}/{x}.png. Set format="image/png" and transparent={true}.
+> STEP 2: ADD GEOJSON DATA FEEDS (React Frontend)
+> Add two new state variables to fetch and store GeoJSON data on component mount. Wrap these fetches in try...catch blocks to prevent crashes if the sources timeout.
+>  * GDACS Live Alerts: Fetch https://www.gdacs.org/xml/rss_7d.geojson. Use the <GeoJSON> component to render the data. Create a simple pointToLayer function to style the markers: if feature.properties.alertscore is high, make the marker red; otherwise, make it orange or green.
+>  * Submarine Cables: Fetch https://raw.githubusercontent.com/telegeography/www.submarinecablemap.com/master/web/public/api/v3/cable/cable-geo.json. Render with the <GeoJSON> component. Use the style prop to color the polylines cyan or neon blue with a weight of 2, so they look like glowing data lines on the dark map.
+> STEP 3: UI INTEGRATION
+> Ensure all 5 of these new layers have toggle switches in the floating right-side control panel. The GeoJSON layers (GDACS and Cables) should only execute their fetch calls when toggled ON by the user to save bandwidth and prevent unnecessary network requests on initial load.
+> 
