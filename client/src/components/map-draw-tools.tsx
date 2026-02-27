@@ -4,6 +4,7 @@ import L from "leaflet";
 import "leaflet-draw";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuthUi } from "@/contexts/auth-ui-context";
 import type { Group, SavedFeature } from "@shared/models/auth";
 
 interface DrawToolsProps {
@@ -12,6 +13,7 @@ interface DrawToolsProps {
 
 export default function MapDrawTools({ onFeatureDrawn }: DrawToolsProps) {
   const map = useMap();
+  const { isAuthenticated, requireAuth } = useAuthUi();
   const drawControlRef = useRef<L.Control.Draw | null>(null);
   const featureGroupRef = useRef<L.FeatureGroup | null>(null);
   const [drawColor, setDrawColor] = useState("#00d4ff");
@@ -219,26 +221,38 @@ export default function MapDrawTools({ onFeatureDrawn }: DrawToolsProps) {
 
             {pendingLayer && (
               <div className="border-t border-[hsl(215,15%,16%)] pt-2 mt-2">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Save to Group</p>
-                <select
-                  data-testid="select-save-group"
-                  value={selectedGroupId || ""}
-                  onChange={(e) => setSelectedGroupId(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full bg-[hsl(220,15%,12%)] border border-[hsl(215,15%,20%)] rounded px-2 py-1 text-xs text-foreground mb-2"
-                >
-                  <option value="">Select group...</option>
-                  {userGroups?.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-                <button
-                  data-testid="button-save-feature"
-                  onClick={handleSave}
-                  disabled={!selectedGroupId || saveFeatureMutation.isPending}
-                  className="w-full bg-[hsl(195,90%,48%)] text-[hsl(220,20%,4%)] text-xs font-semibold py-1.5 rounded disabled:opacity-40 transition-opacity"
-                >
-                  {saveFeatureMutation.isPending ? "Saving..." : "Save Feature"}
-                </button>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Save Drawing</p>
+                {!isAuthenticated ? (
+                  <button
+                    data-testid="button-save-feature"
+                    onClick={() => requireAuth()}
+                    className="w-full border border-[hsl(195,90%,48%)] text-[hsl(195,90%,48%)] text-xs font-semibold py-1.5 rounded transition-colors hover:bg-[hsl(195,90%,48%)] hover:text-[hsl(220,20%,4%)]"
+                  >
+                    Login to Save
+                  </button>
+                ) : (
+                  <>
+                    <select
+                      data-testid="select-save-group"
+                      value={selectedGroupId || ""}
+                      onChange={(e) => setSelectedGroupId(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full bg-[hsl(220,15%,12%)] border border-[hsl(215,15%,20%)] rounded px-2 py-1 text-xs text-foreground mb-2"
+                    >
+                      <option value="">Select group...</option>
+                      {userGroups?.map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      data-testid="button-save-feature"
+                      onClick={handleSave}
+                      disabled={!selectedGroupId || saveFeatureMutation.isPending}
+                      className="w-full bg-[hsl(195,90%,48%)] text-[hsl(220,20%,4%)] text-xs font-semibold py-1.5 rounded disabled:opacity-40 transition-opacity"
+                    >
+                      {saveFeatureMutation.isPending ? "Saving..." : "Save Feature"}
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

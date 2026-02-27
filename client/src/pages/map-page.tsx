@@ -6,6 +6,8 @@ import ControlPanel, { type LayerVisibility, type BaseMap } from "@/components/c
 import MapControls from "@/components/map-controls";
 import MapDrawTools from "@/components/map-draw-tools";
 import WorkspaceSidebar, { WorkspaceSavedLayers } from "@/components/workspace-sidebar";
+import WelcomeModal from "@/components/welcome-modal";
+import AuthPromptModal from "@/components/auth-prompt-modal";
 import {
   BaseMapLayer,
   TileOverlays,
@@ -18,15 +20,16 @@ import {
   MilitaryBasesLayer,
 } from "@/components/map-layers";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import { LogOut, User, FolderOpen } from "lucide-react";
+import { useAuthUi } from "@/contexts/auth-ui-context";
+import { Shield, FolderOpen, LogIn, LogOut } from "lucide-react";
 
 const US_CENTER: [number, number] = [39.8283, -98.5795];
 const DEFAULT_ZOOM = 5;
 
 export default function MapPage() {
   const { toast } = useToast();
-  const { user, logout } = useAuth();
+  const { isAuthenticated, isLoading, authPromptOpen, closeAuthPrompt, requireAuth } = useAuthUi();
+
   const [baseMap, setBaseMap] = useState<BaseMap>("dark");
   const [layers, setLayers] = useState<LayerVisibility>({
     osm: false,
@@ -69,89 +72,151 @@ export default function MapPage() {
     setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 
+  const handleWorkspaceOpen = useCallback(() => {
+    if (!requireAuth()) return;
+    setWorkspaceOpen(true);
+  }, [requireAuth]);
+
   return (
-    <div data-testid="map-container" className="relative w-screen h-screen overflow-hidden">
-      <MapContainer
-        center={US_CENTER}
-        zoom={DEFAULT_ZOOM}
-        style={{ width: "100%", height: "100%" }}
-        zoomControl={false}
-        attributionControl={false}
+    <div data-testid="map-container" className="relative w-screen h-screen overflow-hidden flex flex-col">
+      <nav
+        data-testid="top-nav"
+        className="relative z-[1001] flex items-center justify-between px-4 h-11 shrink-0"
+        style={{
+          backgroundColor: "hsla(220, 20%, 5%, 0.96)",
+          borderBottom: "1px solid hsl(215, 15%, 14%)",
+          backdropFilter: "blur(16px)",
+        }}
       >
-        <BaseMapLayer baseMap={baseMap} />
-        <TileOverlays layers={layers} />
-
-        {layers.aviation && <AviationLayer />}
-        {layers.hazards && <HazardsLayer />}
-        {layers.wikipedia && <WikipediaLayer />}
-        {layers.surveillance && <SurveillanceLayer />}
-        {layers.gdacs && <GdacsLayer />}
-        {layers.cables && <SubmarineCablesLayer />}
-        {layers.military && <MilitaryBasesLayer />}
-
-        <WorkspaceSavedLayers visibleGroups={visibleGroups} />
-
-        <MapControls />
-        <MapDrawTools />
-      </MapContainer>
-
-      <ControlPanel
-        layers={layers}
-        onToggle={handleToggle}
-        health={health ?? null}
-        baseMap={baseMap}
-        onBaseMapChange={setBaseMap}
-      />
-
-      <div
-        data-testid="user-profile"
-        className="absolute top-3 left-3 z-[1000] flex items-center gap-2"
-      >
-        <div
-          className="flex items-center gap-2 rounded-md border border-[hsl(215,15%,16%)] px-3 py-2"
-          style={{ backgroundColor: "hsla(220, 18%, 8%, 0.92)", backdropFilter: "blur(12px)" }}
-        >
-          <User className="w-4 h-4 text-[hsl(195,90%,48%)]" />
-          <span className="text-xs font-mono text-[hsl(200,15%,72%)]" data-testid="text-username">
-            Operator
+        <div className="flex items-center gap-2.5">
+          <Shield className="w-4 h-4 text-[hsl(195,90%,48%)]" />
+          <span
+            data-testid="text-app-title"
+            className="font-mono text-xs font-bold tracking-widest uppercase text-[hsl(195,90%,48%)]"
+          >
+            iAware OSINT Visualizer
           </span>
-          <button
-            data-testid="button-workspace"
-            onClick={() => setWorkspaceOpen(!workspaceOpen)}
-            className="ml-1 p-1 rounded text-[hsl(215,10%,48%)] hover:text-[hsl(195,90%,48%)] transition-colors"
-            title="My Workspace"
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isLoading ? (
+            <span className="text-[11px] font-mono text-[hsl(215,10%,40%)]">···</span>
+          ) : isAuthenticated ? (
+            <>
+              <span
+                data-testid="text-workspace-status"
+                className="text-[11px] font-mono text-[hsl(145,70%,48%)] flex items-center gap-1.5"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[hsl(145,70%,48%)] inline-block" />
+                Workspace Active
+              </span>
+              <button
+                data-testid="button-workspace"
+                onClick={() => setWorkspaceOpen(!workspaceOpen)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono border border-[hsl(215,15%,18%)] text-[hsl(200,15%,65%)] hover:text-[hsl(195,90%,48%)] hover:border-[hsl(195,90%,48%)] transition-colors"
+                title="My Workspace"
+              >
+                <FolderOpen className="w-3 h-3" />
+                Workspace
+              </button>
+              <a
+                data-testid="button-logout"
+                href="/api/logout"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono border border-[hsl(215,15%,18%)] text-[hsl(200,15%,65%)] hover:text-red-400 hover:border-red-400 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-3 h-3" />
+                Logout
+              </a>
+            </>
+          ) : (
+            <>
+              <span
+                data-testid="text-guest-status"
+                className="text-[11px] font-mono text-[hsl(215,10%,48%)] flex items-center gap-1.5"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[hsl(215,10%,35%)] inline-block" />
+                Guest Mode
+              </span>
+              <button
+                data-testid="button-workspace"
+                onClick={handleWorkspaceOpen}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono border border-[hsl(215,15%,18%)] text-[hsl(200,15%,65%)] hover:text-[hsl(195,90%,48%)] hover:border-[hsl(195,90%,48%)] transition-colors"
+                title="My Workspace (login required)"
+              >
+                <FolderOpen className="w-3 h-3" />
+                Workspace
+              </button>
+              <a
+                data-testid="button-login"
+                href="/api/login"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-mono border border-[hsl(195,90%,48%)] text-[hsl(195,90%,48%)] hover:bg-[hsl(195,90%,48%)] hover:text-[hsl(220,25%,5%)] transition-colors"
+              >
+                <LogIn className="w-3 h-3" />
+                Login
+              </a>
+            </>
+          )}
+        </div>
+      </nav>
+
+      <div className="flex-1 relative">
+        <MapContainer
+          center={US_CENTER}
+          zoom={DEFAULT_ZOOM}
+          style={{ width: "100%", height: "100%" }}
+          zoomControl={false}
+          attributionControl={false}
+        >
+          <BaseMapLayer baseMap={baseMap} />
+          <TileOverlays layers={layers} />
+
+          {layers.aviation && <AviationLayer />}
+          {layers.hazards && <HazardsLayer />}
+          {layers.wikipedia && <WikipediaLayer />}
+          {layers.surveillance && <SurveillanceLayer />}
+          {layers.gdacs && <GdacsLayer />}
+          {layers.cables && <SubmarineCablesLayer />}
+          {layers.military && <MilitaryBasesLayer />}
+
+          {isAuthenticated && <WorkspaceSavedLayers visibleGroups={visibleGroups} />}
+
+          <MapControls />
+          <MapDrawTools />
+        </MapContainer>
+
+        <ControlPanel
+          layers={layers}
+          onToggle={handleToggle}
+          health={health ?? null}
+          baseMap={baseMap}
+          onBaseMapChange={setBaseMap}
+        />
+
+        {isAuthenticated && (
+          <WorkspaceSidebar
+            open={workspaceOpen}
+            onClose={() => setWorkspaceOpen(false)}
+            visibleGroups={visibleGroups}
+            onVisibleGroupsChange={setVisibleGroups}
+          />
+        )}
+
+        <div
+          data-testid="text-branding"
+          className="absolute bottom-3 right-3 z-[1000] pointer-events-none select-none"
+        >
+          <span
+            className="text-[10px] font-mono tracking-widest uppercase"
+            style={{ color: "hsla(195, 90%, 48%, 0.35)" }}
           >
-            <FolderOpen className="w-3.5 h-3.5" />
-          </button>
-          <button
-            data-testid="button-logout"
-            onClick={() => logout()}
-            className="ml-1 p-1 rounded text-[hsl(215,10%,48%)] hover:text-red-400 transition-colors"
-            title="Sign Out"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
+            iAware
+          </span>
         </div>
       </div>
 
-      <WorkspaceSidebar
-        open={workspaceOpen}
-        onClose={() => setWorkspaceOpen(false)}
-        visibleGroups={visibleGroups}
-        onVisibleGroupsChange={setVisibleGroups}
-      />
-
-      <div
-        data-testid="text-branding"
-        className="absolute bottom-3 right-3 z-[1000] pointer-events-none select-none"
-      >
-        <span
-          className="text-[10px] font-mono tracking-widest uppercase"
-          style={{ color: "hsla(195, 90%, 48%, 0.4)" }}
-        >
-          OSINT TACTICAL MAP
-        </span>
-      </div>
+      <WelcomeModal />
+      <AuthPromptModal open={authPromptOpen} onClose={closeAuthPrompt} />
     </div>
   );
 }

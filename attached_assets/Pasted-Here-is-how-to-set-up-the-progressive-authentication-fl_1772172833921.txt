@@ -1,0 +1,36 @@
+Here is how to set up the progressive authentication flow. Forcing users to log in before they even see what an app does is a guaranteed way to kill your user base. Letting them use the map as a guest and only asking for an account when they actually want to save something is the right approach.
+For the description, here is a tighter, punchier paraphrase: "A streamlined platform to visualize real-time environments, monitor global events, and build custom overlays for tactical and personal awareness."
+Copy and paste this directly into your Replit chat:
+> Redesign the initial load experience and authentication flow for the application. Do not break the existing map layers, drawing tools, or backend proxy.
+> STEP 1: THE SPLASH SCREEN & TRANSPARENCY MODAL
+>  * Create a WelcomeModal component that loads over the map on the first visit.
+>  * Main Header: "iAware OSINT Visualizer".
+>  * Subtitle: "A streamlined platform to visualize real-time environments, monitor global events, and build custom overlays for tactical and personal awareness."
+>  * Action Buttons: The primary, largest button must be "Browse Anonymously as Guest" (which closes the modal and loads the map). Place a secondary, smaller "Login with Replit" button below it.
+>  * Transparency Section: Below the buttons, display a scrollable "Data Sources & Attribution" list for maximum transparency. Include these exactly:
+>    * OpenStreetMap & Overpass API (Infrastructure & Military)
+>    * Esri (Satellite & Hybrid Imagery)
+>    * USGS (Topography, Protected Lands & Seismic Data)
+>    * NASA FIRMS & EONET (Active Hazards & Fires)
+>    * OpenSky Network (Aviation)
+>    * AISStream.io (Marine Traffic)
+>    * GDACS (Global Disasters)
+>    * OpenAIP (Airspace)
+>    * TeleGeography (Submarine Cables)
+> STEP 2: PROGRESSIVE AUTHENTICATION FLOW
+>  * Remove any hard authentication walls wrapping the main <App /> component. The map must be fully interactive for unauthenticated guests.
+>  * Create a global state or context (e.g., useAuth) that checks if the Replit user is currently authenticated via the standard Replit Auth headers/scripts.
+>  * Update the frontend UI for restricted actions:
+>    * "Create Group" button.
+>    * "Save Place" button.
+>    * "Save Drawing" (in the Leaflet-Draw popup).
+>  * When a user clicks any of those three buttons, check the useAuth state. If they are a guest, block the action and trigger a custom AuthPromptModal that says: "You need an anonymous account to save data. [Login with Replit]". If they are logged in, execute the action normally.
+> STEP 3: MAIN APP HEADER
+>  * Add a sleek, dark top-navigation bar to the main map UI.
+>  * Left side: Display the title "iAware OSINT Visualizer".
+>  * Right side: Display the user's status. If logged in, show "Workspace Active" and a "Logout" button. If a guest, show "Guest Mode" and a "Login" button.
+> 
+Nuanced Details for the Build
+ * Replit Auth Mechanics: Replit's built-in authentication usually wants to lock down the entire repl. By explicitly telling the AI to use "progressive authentication," it will use Replit's frontend script (<script src="https://auth.services.replit.com/auth.js"></script>) to handle the login popup manually, rather than rejecting all guest traffic at the Express server level.
+ * The Splash Screen: Putting the data sources right on the front page builds immediate trust. OSINT tools that hide their sources look sketchy. By listing NASA, USGS, and Esri up front, it establishes credibility before the user even interacts with the map.
+Would you like me to map out how to structure the custom "AuthPromptModal" so it matches the tactical, dark-mode styling of the rest of the map?
