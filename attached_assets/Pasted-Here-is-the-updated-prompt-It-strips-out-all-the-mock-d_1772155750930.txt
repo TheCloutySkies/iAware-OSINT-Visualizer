@@ -1,0 +1,26 @@
+Here is the updated prompt. It strips out all the mock data and replaces it with the architecture to connect to actual, free, real-time data APIs.
+Copy and paste this into Replit:
+> Build a full-stack OSINT and awareness map application. The frontend should use React, Vite, Tailwind CSS, and React-Leaflet. The backend should use Node.js and Express to act as a proxy for external REST APIs, while the frontend will handle WebSockets directly. No mock data should be used; this must connect to real endpoints.
+>  * UI/UX:
+>  * Mobile-first single-page application (fully optimized for touchscreens) but scales to desktop.
+>  * Dark-mode by default, using a tactical/dashboard aesthetic.
+>  * A floating, collapsible control panel to toggle map layers and real-time data feeds independently.
+>  * Static Map & Tile Layers (React-Leaflet):
+>  * Base Map: CartoDB Dark Matter.
+>  * Overlay 1: OpenStreetMap (Standard).
+>  * Overlay 2: OpenRailwayMap (XYZ: https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png).
+>  * Overlay 3: OpenInfrastructureMap (XYZ: https://tiles.openinframap.org/{z}/{x}/{y}.png).
+>  * Real-Time Data Feeds (Actual APIs):
+>  * Aviation (REST): Set up an Express backend endpoint to fetch live flight data from the OpenSky Network free API (https://opensky-network.org/api/states/all). Filter the data by the bounding box of the user's current map view to prevent overloading the browser, and display them as aircraft icons rotating to their true heading.
+>  * Marine Traffic (WebSocket): Implement a WebSocket connection directly in the React frontend to connect to wss://stream.aisstream.io/v0/stream. Subscribe to the "PositionReport" message type. Display the ships as vessel icons on the map, updating their positions in real-time. Leave a clear placeholder in the code for <YOUR_AISSTREAM_API_KEY>.
+>  * Active Hazards (REST): Set up an Express endpoint to pull from the NASA EONET API (https://eonet.gsfc.nasa.gov/api/v3/events?status=open). Filter for Wildfires and Severe Storms, and plot these as hazard markers on the map.
+>  * Core Features:
+>  * A "Locate Me" button to center the map on the device's actual GPS coordinates.
+>  * Screenshot Tool: Add a floating Camera button. Use html2canvas (with useCORS: true and allowTaint: true) to capture the visible Leaflet map container and all active layers, then trigger a high-res PNG download to the device.
+> Ensure the Express server is correctly serving the Vite build and proxying the REST requests to avoid CORS issues.
+> 
+Where to get the real data access:
+To make the code generated from that prompt work instantly, you just need to do two things:
+ * Aisstream.io (Marine Data): Go to aisstream.io and create a free account. They give you an API key immediately. You drop that key into the WebSocket subscription block the AI writes, and you will see live ships moving on your screen. It is currently the only reliable, completely free live AIS feed.
+ * OpenSky Network (Flight Data): The prompt uses their public endpoint, which works without an API key but is rate-limited. If it stops loading because you refreshed too many times, just make a free account on opensky-network.org and add your username/password to the fetch headers in your Replit backend.
+ * NASA EONET (Hazards): This requires no key. It will pull live coordinate data for current wildfires and storms directly from government satellites.

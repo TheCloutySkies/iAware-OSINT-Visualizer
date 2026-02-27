@@ -1,0 +1,35 @@
+Here is the straight reality on adding those specific layers: some of them have open APIs, and some will actively block your Replit server if you try to pull from them automatically.
+To make this the best and most resilient map possible, the prompt below includes fallback mechanisms (so one broken API doesn't crash the whole app) and practical workarounds for the data that is heavily gated.
+The API Reality Check
+ * Wikipedia: Easy and completely free. The MediaWiki API has a built-in geosearch function.
+ * DeFlock (ALPR/Cameras): DeFlock pulls heavily from OpenStreetMap tags. We can bypass needing a specific DeFlock API key by querying the free Overpass API directly for nodes tagged with surveillance and ALPR within your map's bounding box.
+ * Local News: Free news APIs (like GNews or NewsData.io) exist but limit how tightly you can geolocate. The prompt sets up the structure, but you'll need a free API key later.
+ * Police Scanners: Broadcastify holds a monopoly on scanner audio and does not give out free API access. The workaround is to have the map generate a direct link to the local Broadcastify web player based on your map coordinates.
+ * Sex Offender Database: There is no national, unified REST API for this. The National Sex Offender Public Website (NSOPW) and state registries actively use CAPTCHAs to block automated scraping. Attempting to map these pins programmatically will result in your Replit server IP getting banned. The practical fallback is to create a UI button that opens the official state registry search pre-filled with the zip code of your current map center.
+The Master Replit Prompt
+Copy and paste this directly into Replit:
+> Build a highly resilient, full-stack OSINT/Situational Awareness map.
+> Stack: React, Vite, Tailwind CSS, React-Leaflet (Frontend) | Node.js, Express (Backend).
+> CRITICAL REQUIREMENT: Every external API call must be wrapped in try...catch blocks. If an API times out, returns a 429 (Rate Limit), or fails, the backend must return an empty array [] rather than crashing, and the frontend must display a small toast notification ("Layer [X] degraded") while keeping the rest of the map fully functional.
+>  * UI/UX:
+>  * Mobile-first, dark-mode tactical dashboard.
+>  * Floating, collapsible right-side control panel with toggle switches for every single map layer.
+>  * A "Data Health" indicator (green/yellow/red dot) showing the status of the backend connections.
+>  * Static Layers (React-Leaflet):
+>  * Base: CartoDB Dark Matter.
+>  * Overlays: OpenStreetMap, OpenRailwayMap, OpenInfrastructureMap (using their standard XYZ tile formats).
+>  * Real-Time & Geolocated Data Feeds (Handled via Express Backend Proxy):
+>  * Aviation: OpenSky Network API (/api/states/all). Filter by the frontend's bounding box.
+>  * Marine: WebSocket connection to wss://stream.aisstream.io/v0/stream. (Leave placeholder for API key).
+>  * Hazards: NASA EONET API for open wildfires and severe storms.
+>  * Wikipedia Geo: Hit the MediaWiki API endpoint (https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord={lat}|{lon}&gsradius=10000&gslimit=50&format=json). Display articles as markers; clicking them opens a popup with a summary and link.
+>  * ALPR/Surveillance (DeFlock alternative): Query the Overpass API (https://overpass-api.de/api/interpreter) using this Overpass QL: [out:json];node["man_made"="surveillance"]({south},{west},{north},{east});out;. Map these as camera icons.
+>  * Gated/External Data Workarounds (Frontend UI Links):
+>  * Police Scanners: Create a dynamic link in a popup or side panel that takes the map's current center coordinates and links to https://m.broadcastify.com/listen/mid/{lat}/{lon} (or closest equivalent search route) so the user can open local audio in a new tab.
+>  * Registry Data: Add a tool in the menu that reverse-geocodes the map's center to a Zip Code (using a free Nominatim OpenStreetMap call), then provides a direct outbound link to the NSOPW or local registry site for manual searching.
+>  * Core Utilities:
+>  * "Locate Me" GPS button.
+>  * Screenshot capture tool using html2canvas (configured with useCORS: true and allowTaint: true) to download the current map view.
+> Ensure the Vite dev server and Express proxy run concurrently without port conflicts.
+> 
+Would you like me to pull up the documentation for the Overpass API so you know exactly how to filter the camera types (like distinguishing between traffic cams and automated license plate readers)?
